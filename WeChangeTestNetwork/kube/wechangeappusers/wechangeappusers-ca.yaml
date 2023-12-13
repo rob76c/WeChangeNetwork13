@@ -1,0 +1,124 @@
+#
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: wechangeappusers-ca-tls-cert
+spec:
+  isCA: false
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  dnsNames:
+    - localhost
+    - wechangeappusers-ca
+    - wechangeappusers-ca.${ORG2_NS}.svc.cluster.local
+    - wechangeappusers-ca.${DOMAIN}
+  ipAddresses:
+    - 127.0.0.1
+  secretName: wechangeappusers-ca-tls-cert
+  issuerRef:
+    name: wechangeappusers-tls-cert-issuer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wechangeappusers-ca
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wechangeappusers-ca
+  template:
+    metadata:
+      labels:
+        app: wechangeappusers-ca
+    spec:
+      containers:
+        - name: main
+          image: ${FABRIC_CONTAINER_REGISTRY}/fabric-ca:${FABRIC_CA_VERSION}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: FABRIC_CA_SERVER_CA_NAME
+              value: "wechangeappusers-ca"
+            - name: FABRIC_CA_SERVER_DEBUG
+              value: "false"
+            - name: FABRIC_CA_SERVER_HOME
+              value: "/var/hyperledger/fabric-ca-server"
+            - name: FABRIC_CA_SERVER_TLS_CERTFILE
+              value: "/var/hyperledger/fabric/config/tls/tls.crt"
+            - name: FABRIC_CA_SERVER_TLS_KEYFILE
+              value: "/var/hyperledger/fabric/config/tls/tls.key"
+            - name: FABRIC_CA_CLIENT_HOME
+              value: "/var/hyperledger/fabric-ca-client"
+          ports:
+            - containerPort: 443
+          volumeMounts:
+            - name: fabric-volume
+              mountPath: /var/hyperledger
+            - name: fabric-config
+              mountPath: /var/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+              subPath: fabric-ca-server-config.yaml
+            - name: tls-cert-volume
+              mountPath: /var/hyperledger/fabric/config/tls
+              readOnly: true
+          readinessProbe:
+            tcpSocket:
+              port: 443
+            initialDelaySeconds: 2
+            periodSeconds: 5
+      volumes:
+        - name: fabric-volume
+          persistentVolumeClaim:
+            claimName: fabric-wechangeappusers
+        - name: fabric-config
+          configMap:
+            name: wechangeappusers-config
+        - name: tls-cert-volume
+          secret:
+            secretName: wechangeappusers-ca-tls-cert
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wechangeappusers-ca
+spec:
+  ports:
+    - name: https
+      port: 443
+      protocol: TCP
+  selector:
+    app: wechangeappusers-ca
+    
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: 60s
+    nginx.ingress.kubernetes.io/ssl-passthrough: "true"
+  labels:
+    app: wechangeappusers-ca
+  name: wechangeappusers-ca
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: wechangeappusers-ca.${DOMAIN}
+      http:
+        paths:
+          - backend:
+              service:
+                name: wechangeappusers-ca
+                port:
+                  name: https
+            path: /
+            pathType: ImplementationSpecific
+  tls:
+    - hosts:
+        - wechangeappusers-ca.${DOMAIN}
+    

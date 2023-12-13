@@ -1,0 +1,9 @@
+{
+	"network-configs": {
+		"wechangeapp": {
+			"name": "WeChangeApp",
+			"profile": "./connection-profile/wechangeapp.json"
+		}
+	},
+	"license": "Apache-2.0"
+}

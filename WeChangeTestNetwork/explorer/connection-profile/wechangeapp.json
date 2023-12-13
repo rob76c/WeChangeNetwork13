@@ -1,0 +1,48 @@
+{
+	"name": "wechangeapp",
+	"version": "1.0.0",
+	"client": {
+		"tlsEnable": true,
+		"adminCredential": {
+			"id": "exploreradmin",
+			"password": "exploreradminpw"
+		},
+		"enableAuthentication": true,
+		"organization": "WeChangeAppUsersMSP",
+		"connection": {
+			"timeout": {
+				"peer": {
+					"endorser": "300"
+				},
+				"orderer": "300"
+			}
+		}
+	},
+	"channels": {
+		"wechangeapp": {
+			"peers": {
+				"wechangeappusers-peer1": {}
+			}
+		}
+	},
+	"organizations": {
+		"Org1MSP": {
+			"mspid": "WeChangeAppUsersMSP",
+			"adminPrivateKey": {
+				"path": "/Users/lemillions/Desktop/WeChangeNetwork13/WeChangeTestNetwork/build/enrollments/wechangeappusers/users/wechangeappusersadmin/msp/keystore/key.pem"
+			},
+			"peers": ["wechangeappusers-peer1"],
+			"signedCert": {
+				"path": "/Users/lemillions/Desktop/WeChangeNetwork13/WeChangeTestNetwork/build/enrollments/wechangeappusers/users/wechangeappusersadmin/msp/signcerts/cert.pem"
+			}
+		}
+	},
+	"peers": {
+		"wechangeappusers-peer1": {
+			"tlsCACerts": {
+				"path": "/Users/lemillions/Desktop/WeChangeNetwork13/WeChangeTestNetwork/build/cas/wechangeappusers-ca/tlsca-cert.pem"
+			},
+			"url": "grpcs://wechangeappusers-peer1:7051"
+		}
+	}
+}
